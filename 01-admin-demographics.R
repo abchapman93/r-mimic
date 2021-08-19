@@ -105,3 +105,67 @@ d_patients %>%
     add_age_at_death() %>%
     ggplot(aes(y = age_at_death, x = sex)) +
     geom_boxplot()
+
+# Now let's look at ethnicity
+# demographic_detail detail is one row per admission, so will need to deduplicate
+demographic_detail %>%
+    distinct(subject_id, .keep_all = TRUE) %>%
+    count(ethnicity_descr)
+
+demographic_detail %>%
+    distinct(subject_id, .keep_all = TRUE) %>%
+    ggplot(aes(ethnicity_descr)) +
+        geom_bar()
+
+# Only keep top 5
+demographic_detail %>%
+    distinct(subject_id, .keep_all = TRUE) %>%
+    group_by(ethnicity_descr) %>%
+    summarize(count = n()) %>%
+    top_n(5, wt = count) %>%
+    mutate(ethnicity_descr = fct_reorder(ethnicity_descr, count, .desc = FALSE)) %>%
+    ggplot(aes(y = ethnicity_descr, x = count)) +
+        geom_bar(stat = "identity")
+
+# Look at age of death by ethnicity
+ethnicity_deaths <- d_patients %>%
+    inner_join(demographic_detail %>%
+                   distinct(subject_id, .keep_all = TRUE)) %>%
+    select(subject_id, ethnicity_descr, dob, dod) %>%
+    add_age_at_death()
+
+head(ethnicity_deaths)
+
+ethnicity_deaths %>%
+    filter() %>%
+    group_by(ethnicity_descr) %>%
+    summarize(mean = mean(age_at_death), 
+              sd = sd(age_at_death), 
+              min = min(age_at_death), 
+              max = max(age_at_death),
+              median = median(age_at_death)
+    )
+
+ethnicity_deaths %>%
+    ggplot(aes(age_at_death, fill = ethnicity_descr)) +
+        geom_histogram() +
+        facet_wrap(~ethnicity_descr)
+
+# Faceted histogram with top 9
+# First identify the 9 most common ethnicities
+most_common <- ethnicity_deaths %>% 
+    group_by(ethnicity_descr) %>% 
+    summarize(cnt = n()) %>% 
+    top_n(n = 8, wt = cnt) %>% 
+    pull(ethnicity_descr)
+
+# Now filter and plot
+ethnicity_deaths %>%
+    filter(ethnicity_descr %in% most_common) %>%
+    mutate(ethnicity_descr = ethnicity_descr %>% fct_infreq()) %>%
+    ggplot(aes(age_at_death, fill = ethnicity_descr)) +
+        geom_histogram(show.legend = FALSE) +
+        facet_wrap(~ethnicity_descr, nrow = 4, ncol = 2, scales = "free_y") +
+        labs(title="Distribution of age at death by ethnicity")
+
+
