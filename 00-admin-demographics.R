@@ -8,18 +8,19 @@ library(getPass)
 
 
 conn <- DBI::dbConnect(MySQL(),
-               user='uvu10919523',
-               password=getPass(),
+               user='uvu10919523', # Replace with your username
+               password=getPass(), # This will pop up for you to enter your password
                dbname='mimic2',
                host='35.233.174.193'
                )
-
+# First, query and load the two patient table
 rslt <- dbSendQuery(conn, 'SELECT * FROM d_patients;')
 d_patients <- tibble(fetch(rslt, n=-1))
 
 rslt <- dbSendQuery(conn, 'SELECT * FROM demographic_detail;')
 demographic_detail <- tibble(fetch(rslt, n=-1))
 
+# Join them
 # Join d_patients and demographic detail
 d_patients %>%
     inner_join(demographic_detail, by = "subject_id")
@@ -64,7 +65,6 @@ d_patients %>%
 d_patients %>%
     add_age_at_death %>%
     top_n(-5, wt = age_at_death)
-
 
 # Get summary statistics
 d_patients %>%
